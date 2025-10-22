@@ -8,28 +8,55 @@ import {
     Alert
 } from 'react-native';
 
+import { collection, getFirestore, getDocs, query, where } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import appFirebase from '../BasedeDatos/Firebase';
+
+const db = getFirestore(appFirebase);
+import { auth } from '../BasedeDatos/Firebase';
+
+
+
 export default function LoginScreen({ navigation }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const acceder= () => {
+
+
+    const acceder = async () => {
         if (!email.trim() || !password.trim()) {
             Alert.alert('Campos vacíos', 'Por favor ingrese su correo y contraseña.');
             return;
         }
+        try {
 
-        //Autenticación básica 
-        if (email === 'cliente@gmail.com' && password === '12345') {
-            Alert.alert('Bienvenido', 'Inicio de sesión exitoso');
-            navigation.replace('MyTabsCliente') // ir a la nav del cliente
-        } else if (email === 'admin@gmail.com' && password === '12345') {
-            Alert.alert('Bienvenido', 'Inicio de sesión exitoso');
-            navigation.replace('MyTabsAdmon'); // ir a la nav del administrador
+            //autenticación del usuario
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
+            //Consulta a la colección usuario
+            const q = query(
+                collection(db, 'Roles'), where('correo', '==', email.trim())
+            );
+            const querySnapshot = await getDocs(q);
+            let rol = "";
+            querySnapshot.forEach((doc) => {
+                rol = doc.data().rol;
+            });
+            //finaliza la consulta
+
+            //Verificación del rol para la navegación 
+
+            if (rol === "Cliente")
+                navigation.replace('MyTabsCliente') // ir a la nav del cliente
+            else if (rol === "Administrador")
+                navigation.replace('MyTabsAdmon'); // ir a la nav del administrador
+        
+        } catch (error) {
+            Alert.alert("Error", "Correo o contraseña incorrectos");
         }
-        else {
-            Alert.alert('Error', 'Correo o contraseña incorrectos');
-        }
+
+
     };
 
     return (
